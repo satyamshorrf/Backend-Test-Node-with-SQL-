@@ -3,12 +3,17 @@ const mysql = require("mysql2");
 const express = require("express");
 const app = express();
 const path = require("path");
+const { v4: uuidv4 } = require('uuid');
 const methodOverride = require("method-override");
 
 app.use(methodOverride("_method"));
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "/views"));
+
+
+
+
 
 const connection = mysql.createConnection({
   host: "localhost",
@@ -73,6 +78,7 @@ app.get("/user/:id/edit", (req, res) => {
   }
 });
 
+
 // Update (DB) Route
 app.patch("/user/:id", (req, res) => {
   let { id } = req.params;
@@ -99,6 +105,69 @@ app.patch("/user/:id", (req, res) => {
   }
 });
 
+// Delete Route
+app.get("/user/:id/delete", (req, res) => {
+  let { id } = req.params;
+  let q = `SELECT * FROM user WHERE id='${id}'`;
+
+  try {
+    connection.query(q, (err, result) => {
+      if (err) throw err;
+        console.log(result);
+        res.render("delete.ejs", { user: result[0] });
+    });
+  } catch (err) {
+    console.log(err);
+    res.send("some error in DB");
+  }
+});
+
+// Delete (DB) Route
+app.delete("/user/:id", (req, res) => {
+  let { id } = req.params;
+
+  let q = `DELETE FROM user WHERE id='${id}'`;
+
+  try {
+    connection.query(q, (err) => {
+      if (err) throw err;
+        console.log(err);
+        res.redirect("/user");
+
+    });
+  } catch (err) {
+    console.log(err);
+    res.send("some error in DB");
+
+  }
+});
+
+
+app.get("/user/new", (req, res) => {
+  res.render("new.ejs");
+});
+
+app.post("/user/new", (req, res) => {
+  let { username, email, password } = req.body;
+  let id = uuidv4();
+  //Query to Insert New User
+  let q = `INSERT INTO user (id, username, email, password) VALUES ('${id}','${username}','${email}','${password}') `;
+
+  try {
+    connection.query(q, (err, result) => {
+      if (err) throw err;
+      console.log("added new user");
+      res.redirect("/user");
+    });
+  } catch (err) {
+    res.send("some error occurred");
+  }
+});
+
+
+
 app.listen(8080, () => {
   console.log("Server is listening on port 8080");
 });
+
+
